@@ -1,0 +1,6 @@
+*.pyc
+__pycache__/
+*/.ipynb_checkpoints/
+
+assignment2/zh-cn.ipynb
+assignment2/README-zh-cn.md
