@@ -1,6 +1,7 @@
 *.pyc
 **/.ipynb_checkpoints/
 .ipynb_checkpoints/
+**/pdf/ 
 
 assignment2/zh-cn.ipynb
 assignment2/README-zh-cn.md
