@@ -68,24 +68,24 @@ func handleConnection(conn net.Conn) {
 	}
 
 	buf := make([]byte, 1024)
-    var response []byte
-    for {
-        n, err := remoteConn.Read(buf)
-        if err != nil {
-            break
-        }
-        response = append(response, buf[:n]...)
-        if _, err := conn.Write(buf[:n]); err != nil {
-            break
-        }
-    }
+	var response []byte
+	for {
+		n, err := remoteConn.Read(buf)
+		if err != nil {
+			break
+		}
+		response = append(response, buf[:n]...) // 副本用于解析HTML
+		if _, err := conn.Write(buf[:n]); err != nil {
+			break
+		}
+	}
 
-    go DNSCache(response)
+	go DNSCache(response)
 }
 
 func DNSCache(htmlDocument []byte) {
+	// 解析HTML为 DOM tree，方便遍历
 	doc, err := html.Parse(strings.NewReader(string(htmlDocument)))
-
 	if err != nil {
 		log.Println("Broken html document!")
 		return
@@ -94,19 +94,21 @@ func DNSCache(htmlDocument []byte) {
 	// 深搜遍历
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
+		// <a ...> 标签
 		if node.Type == html.ElementNode && node.Data == "a" {
 			for _, a := range node.Attr {
-				// 有href的a标签
+				// <a href="http://...">Link1</a>
 				if a.Key == "href" && strings.HasPrefix(a.Val, "http") {
-					log.Println("href=",a.Val)
-					host := strings.Split(a.Val, "/")[2] // 获取链接地址（删掉http头）
+					log.Println("href=", a.Val)
+					host := strings.Split(a.Val, "/")[2] // e.g. "example.com"
+					// 异步DNS查询
 					go func(host string) {
-						result, err := net.LookupHost(host)
+						result, err := net.LookupHost(host) // 结果自动缓存到系统DNS缓存
 						if err != nil {
 							log.Println("DNS lookup failed")
-						} else{
+						} else {
 							log.Println("DNS prefetched: ", host)
-							log.Println("Result: ",result)
+							log.Println("Result: ", result)
 						}
 					}(host)
 				}
